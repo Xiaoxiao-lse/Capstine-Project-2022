@@ -7,3 +7,5 @@ The Analysis.ipynb records the code for producing figures for CUSUM test and nul
 reference: Fan, R., Varol, O., Varamesh, A., Barron, A., van de Leemput, I. A., Scheffer, M., & Bollen, J. (2019). The minute-scale dynamics of online emotions reveal the effects of affect labeling. Nature Human Behaviour, 3(1).
 
 RDD analysis is stored in data/rdd/ directory.
+
+The data used in analysis is generated using python and code is provided in the preprocessing folder
