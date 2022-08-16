@@ -1,0 +1,237 @@
+---
+title: "RDD"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(rddtools)
+library(magrittr)
+library("xlsx")
+library("lfe")
+```
+
+Negative affect labeling
+```{r}
+#load files
+rdd_neg <- read.csv("new/rdd_neg.csv") #replies are to affect labelling tweets
+rdd_neg_reply <- read.csv("new/rdd_neg_unreply.csv")#replies are not to affect labelling tweets
+rdd_neg_unreply <- read.csv("new/rdd_neg_overall_unreply.csv")
+```
+
+```{r}
+# recenter time varibale
+rdd_neg["running_variable"] =rdd_neg["start_t"] - rdd_neg["reply_time"]
+rdd_neg_reply["running_variable"] =rdd_neg_reply["start_t"] - rdd_neg_reply["reply_time"]
+rdd_neg_unreply["running_variable"] = rdd_neg_unreply["start_t"] # no reply time for unreply
+# Add dummy variable
+rdd_neg <- rdd_neg %>% 
+  mutate(D = as.factor(ifelse(start_t >= reply_time, 1, 0)) ) %>%
+  mutate(valence = as.factor(ifelse(mood > 0, "pos", "neg")))
+rdd_neg_reply <- rdd_neg_reply %>% 
+  mutate(D = as.factor(ifelse(start_t >= reply_time, 1, 0)) ) %>%
+  mutate(valence = as.factor(ifelse(mood > 0, "pos0", "neg0")))
+
+rdd_neg_unreply <- rdd_neg_unreply %>% 
+  mutate(D = as.factor(ifelse(start_t >= 0, 1, 0)) ) 
+
+rdd_neg_unreply$mood <- 0
+rdd_neg_unreply$valence <- "None"
+
+rdd_neg_overall <- rbind(rdd_neg,rdd_neg_reply,rdd_neg_unreply)
+```
+
+
+```{r}
+rdd_neg_overall$valence <- relevel(rdd_neg_overall$valence ,ref = "pos0")
+mod <- felm(mean ~ D + running_variable + valence*D +valence*running_variable|reply_time + valence: as.numeric(followers_count)| 0 |reply_time + followers_count,data = rdd_neg_overall)
+summary(mod)
+
+```
+Negative with affect labelling replies
+```{r}
+mod <- felm(mean ~ D + running_variable + valence*D +valence*running_variable| as.numeric(reply_time) + as.numeric(followers_count)| 0 |reply_time + followers_count,data = rdd_neg)
+
+summary(mod)
+```
+Positive replies towards affect labelling tweets
+
+```{r}
+rdd_neg_pos <- rdd_neg[rdd_neg["valence"] == "pos",]
+
+mod2 <- felm(mean ~ D + running_variable |as.numeric(reply_time) + as.numeric(followers_count)| 0 |reply_time + followers_count ,data = rdd_neg_pos)
+
+summary(mod2)
+```
+
+```{r}
+data <- rdd_data(y= rdd_neg_pos$mean,x= rdd_neg_pos$running_variable, cutpoint = 0 )
+
+rdd_mod <- rdd_reg_lm(rdd_object = data,slope = "same",covar.opt = list(strategy = "include"),bw =rdd_bw_ik((data)))
+plotPlacebo(
+rdd_mod,
+device = c("ggplot", "base"),
+from = 0.1,
+to = 0.9,
+by = 100,
+level = 0.95,
+same_bw = TRUE,
+vcov. = NULL,
+plot = TRUE,
+output = c("data", "ggplot")
+)
+```
+
+Negative replies to affect labelling tweets
+```{r}
+
+rdd_neg_neg <- rdd_neg[rdd_neg["valence"] == "neg",]
+
+mod3<- felm(mean ~ D + running_variable |as.numeric(reply_time) + as.numeric(followers_count)| 0 |reply_time + followers_count ,data = rdd_neg_neg)
+
+summary(mod3)
+```
+Replies but not to affect labelling tweets
+
+```{r}
+
+mod3<- felm(mean ~ D + running_variable + valence * D + valence*running_variable|as.numeric(reply_time) + as.numeric(followers_count)| 0 |reply_time + followers_count ,data = rdd_neg_reply)
+
+summary(mod3)
+
+```
+
+
+```{r}
+rdd_neg_reply_neg <- rdd_neg_reply[rdd_neg_reply["valence"] == "neg0",]
+mod3<- felm(mean ~ D + running_variable|as.numeric(reply_time) + as.numeric(followers_count)| 0 |reply_time + followers_count ,data = rdd_neg_reply_neg)
+
+summary(mod3)
+```
+```{r}
+
+
+data <- rdd_data(y= rdd_neg_reply_neg$mean,x= rdd_neg_reply_neg$running_variable, cutpoint = 0 )
+
+rdd_mod <- rdd_reg_lm(rdd_object = data,slope = "same",covar.opt = list(strategy = "include"),bw =rdd_bw_ik((data)))
+plotPlacebo(
+rdd_mod,
+device = c("ggplot", "base"),
+from = 0.1,
+to = 0.9,
+by = 100,
+level = 0.95,
+same_bw = TRUE,
+vcov. = NULL,
+plot = TRUE,
+output = c("data", "ggplot")
+)
+```
+
+
+```{r}
+
+rdd_neg_reply_pos <- rdd_neg_reply[rdd_neg_reply["valence"] == "pos0",]
+mod3<- felm(mean ~ D + running_variable |as.numeric(reply_time) + as.numeric(followers_count)| 0 |reply_time + followers_count ,data = rdd_neg_reply_pos)
+
+summary(mod3)
+```
+
+```{r}
+data <- rdd_data(y= rdd_neg_reply_pos$mean,x= rdd_neg_reply_pos$running_variable, cutpoint = 0 )
+
+rdd_mod <- rdd_reg_lm(rdd_object = data,slope = "same",covar.opt = list(strategy = "include"),bw =rdd_bw_ik((data)))
+plotPlacebo(
+rdd_mod,
+device = c("ggplot", "base"),
+from = 0.1,
+to = 0.9,
+by = 100,
+level = 0.95,
+same_bw = TRUE,
+vcov. = NULL,
+plot = TRUE,
+output = c("data", "ggplot")
+)
+```
+
+
+```{r}
+mod3<- felm(mean ~ D + running_variable |as.numeric(followers_count)| 0 | followers_count ,data = rdd_neg_unreply)
+
+summary(mod3)
+
+
+```
+```{r}
+data <- rdd_data(y= rdd_neg_unreply$mean,x= rdd_neg_unreply$running_variable, cutpoint = 0 )
+
+rdd_mod <- rdd_reg_lm(rdd_object = data,slope = "same",covar.opt = list(strategy = "include"),bw =rdd_bw_ik((data)))
+plotPlacebo(
+rdd_mod,
+device = c("ggplot", "base"),
+from = 0.1,
+to = 0.9,
+by = 100,
+level = 0.95,
+same_bw = TRUE,
+vcov. = NULL,
+plot = TRUE,
+output = c("data", "ggplot")
+)
+```
+Data distribution
+
+```{r}
+
+frequency_mood <- rdd_neg %>%
+  group_by(id) %>%
+  select(id,valence,mood,reply_time) %>%
+  distinct() %>%
+  ungroup(id)
+
+frequency_mood %>%
+  select(valence) %>%
+  group_by(valence) %>%
+  count()
+
+frequency_mood  %>%
+  group_by(valence) %>%
+  summarise_at(vars(mood), list(name = mean))
+
+
+frequency_mood  %>%
+  group_by(valence) %>%
+  summarise_at(vars(reply_time), list(name = mean))
+```
+
+
+Data distribution 
+```{r}
+frequency_mood <- rdd_neg_reply %>%
+  group_by(id) %>%
+  select(id,valence,mood,reply_time) %>%
+  distinct() %>%
+  ungroup(id)
+
+frequency_mood %>%
+  select(valence) %>%
+  group_by(valence) %>%
+  count()
+
+frequency_mood  %>%
+  group_by(valence) %>%
+  summarise_at(vars(mood), list(name = mean))
+
+
+frequency_mood  %>%
+  group_by(valence) %>%
+  summarise_at(vars(reply_time), list(name = mean))
+
+```
+

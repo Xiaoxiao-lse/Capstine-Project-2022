@@ -1,0 +1,147 @@
+---
+title: "RDD"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(rddtools)
+library(magrittr)
+library("xlsx")
+library("lfe")
+```
+
+posative affect labeling
+```{r}
+#load files
+rdd_pos <- read.csv("new/rdd_pos.csv") #replies are to affect labelling tweets
+rdd_pos_reply <- read.csv("new/rdd_pos_unreply.csv")#replies are not to affect labelling tweets
+rdd_pos_unreply <- read.csv("new/rdd_pos_overall_unreply.csv")
+```
+
+```{r}
+# recenter time varibale
+rdd_pos["running_variable"] =rdd_pos["start_t"] - rdd_pos["reply_time"]
+rdd_pos_reply["running_variable"] =rdd_pos_reply["start_t"] - rdd_pos_reply["reply_time"]
+rdd_pos_unreply["running_variable"] = rdd_pos_unreply["start_t"] # no reply time for unreply
+# Add dummy variable
+rdd_pos <- rdd_pos %>% 
+  mutate(D = as.factor(ifelse(start_t >= reply_time, 1, 0)) ) %>%
+  mutate(valence = as.factor(ifelse(mood > 0, "pos", "neg")))
+rdd_pos_reply <- rdd_pos_reply %>% 
+  mutate(D = as.factor(ifelse(start_t >= reply_time, 1, 0)) ) %>%
+  mutate(valence = as.factor(ifelse(mood > 0, "pos0", "neg0")))
+
+rdd_pos_unreply <- rdd_pos_unreply %>% 
+  mutate(D = as.factor(ifelse(start_t >= 0, 1, 0)) ) 
+
+rdd_pos_unreply$mood <- 0
+rdd_pos_unreply$valence <- "None"
+
+rdd_pos_overall <- rbind(rdd_pos,rdd_pos_reply,rdd_pos_unreply)
+```
+
+
+```{r}
+rdd_pos_overall$valence <- relevel(rdd_pos_overall$valence ,ref = "None")
+mod <- felm(mean ~ D + running_variable + valence*D +valence*running_variable| as.numeric(reply_time) + as.numeric(followers_count)| 0 |reply_time + followers_count,data = rdd_pos_overall)
+summary(mod)
+
+```
+
+With affect labelling replies
+
+```{r}
+mod <- felm(mean ~ D + running_variable + valence*D +valence*running_variable| as.numeric(reply_time) + as.numeric(followers_count)| 0 |reply_time + followers_count,data = rdd_pos)
+
+summary(mod)
+```
+pos affect labelling replies
+```{r}
+rdd_pos_pos <- rdd_pos[rdd_pos["valence"] == "pos",]
+
+mod2 <- felm(mean ~ D + running_variable |as.numeric(reply_time) + as.numeric(followers_count)| 0 |reply_time + followers_count ,data = rdd_pos_pos)
+
+summary(mod2)
+```
+
+```{r}
+rdd_pos_neg <- rdd_pos[rdd_pos["valence"] == "neg",]
+
+mod2 <- felm(mean ~ D + running_variable |as.numeric(reply_time) + as.numeric(followers_count)| 0 |reply_time + followers_count ,data = rdd_pos_neg)
+
+summary(mod2)
+```
+Replies but not to affect labelling 
+```{r}
+mod3<- felm(mean ~ D + running_variable + valence * D + valence*running_variable|as.numeric(reply_time) + as.numeric(followers_count)| 0 |reply_time + followers_count ,data = rdd_pos_reply)
+
+summary(mod3)
+```
+
+```{r}
+rdd_pos_reply_neg <- rdd_pos_reply[rdd_pos_reply["valence"] == "neg0",]
+mod3<- felm(mean ~ D + running_variable|as.numeric(reply_time) + as.numeric(followers_count)| 0 |reply_time + followers_count ,data = rdd_pos_reply_neg)
+
+summary(mod3)
+```
+
+```{r}
+rdd_pos_reply_pos <- rdd_pos_reply[rdd_pos_reply["valence"] == "pos0",]
+mod3<- felm(mean ~ D + running_variable|as.numeric(reply_time) + as.numeric(followers_count)| 0 |reply_time + followers_count ,data = rdd_pos_reply_pos)
+
+summary(mod3)
+```
+
+```{r}
+mod3<- felm(mean ~ D + running_variable |as.numeric(followers_count)| 0 | followers_count ,data = rdd_pos_unreply)
+
+summary(mod3)
+```
+Data distributionßß
+```{r}
+frequency_mood <- rdd_pos %>%
+  group_by(id) %>%
+  select(id,valence,mood,reply_time) %>%
+  distinct() %>%
+  ungroup(id)
+
+frequency_mood %>%
+  select(valence) %>%
+  group_by(valence) %>%
+  count()
+
+frequency_mood  %>%
+  group_by(valence) %>%
+  summarise_at(vars(mood), list(name = mean))
+
+frequency_mood  %>%
+  group_by(valence) %>%
+  summarise_at(vars(reply_time), list(name = mean))
+```
+Data distribution
+```{r}
+frequency_mood <- rdd_pos_reply %>%
+  group_by(id) %>%
+  select(id,valence,mood,reply_time) %>%
+  distinct() %>%
+  ungroup(id)
+
+frequency_mood %>%
+  select(valence) %>%
+  group_by(valence) %>%
+  count()
+
+frequency_mood  %>%
+  group_by(valence) %>%
+  summarise_at(vars(mood), list(name = mean))
+
+frequency_mood  %>%
+  group_by(valence) %>%
+  summarise_at(vars(reply_time), list(name = mean))
+```
