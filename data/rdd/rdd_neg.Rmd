@@ -1,5 +1,5 @@
 ---
-title: "RDD"
+title: "RDD_Negative affect labeling"
 output: html_document
 ---
 
@@ -16,7 +16,7 @@ library("xlsx")
 library("lfe")
 ```
 
-Negative affect labeling
+
 ```{r}
 #load files
 rdd_neg <- read.csv("new/rdd_neg.csv") #replies are to affect labelling tweets
@@ -46,29 +46,33 @@ rdd_neg_unreply$valence <- "None"
 rdd_neg_overall <- rbind(rdd_neg,rdd_neg_reply,rdd_neg_unreply)
 ```
 
+# Overall Analysis
 
 ```{r}
-rdd_neg_overall$valence <- relevel(rdd_neg_overall$valence ,ref = "pos0")
-mod <- felm(mean ~ D + running_variable + valence*D +valence*running_variable|reply_time + valence: as.numeric(followers_count)| 0 |reply_time + followers_count,data = rdd_neg_overall)
+# relevel the dummy variable to compare the gap
+rdd_neg_overall$valence <- relevel(rdd_neg_overall$valence ,ref = "neg0")
+mod <- felm(mean ~ D + running_variable + valence*D +valence*running_variable|as.numeric(reply_time) + as.numeric(followers_count)| 0 |reply_time + followers_count,data = rdd_neg_overall)
 summary(mod)
 
 ```
-Negative with affect labelling replies
+## With affect labelling replies
 ```{r}
+# compare negative and positive replies
 mod <- felm(mean ~ D + running_variable + valence*D +valence*running_variable| as.numeric(reply_time) + as.numeric(followers_count)| 0 |reply_time + followers_count,data = rdd_neg)
 
 summary(mod)
 ```
-Positive replies towards affect labelling tweets
+### Positive replies towards affect labelling tweets
 
 ```{r}
 rdd_neg_pos <- rdd_neg[rdd_neg["valence"] == "pos",]
 
-mod2 <- felm(mean ~ D + running_variable |as.numeric(reply_time) + as.numeric(followers_count)| 0 |reply_time + followers_count ,data = rdd_neg_pos)
+mod <- felm(mean ~ D + running_variable |as.numeric(reply_time) + as.numeric(followers_count)| 0 |reply_time + followers_count ,data = rdd_neg_pos)
 
-summary(mod2)
+summary(mod)
 ```
 
+#### Placebo test
 ```{r}
 data <- rdd_data(y= rdd_neg_pos$mean,x= rdd_neg_pos$running_variable, cutpoint = 0 )
 
@@ -87,32 +91,35 @@ output = c("data", "ggplot")
 )
 ```
 
-Negative replies to affect labelling tweets
+### Negative replies to affect labelling tweets
 ```{r}
 
 rdd_neg_neg <- rdd_neg[rdd_neg["valence"] == "neg",]
 
-mod3<- felm(mean ~ D + running_variable |as.numeric(reply_time) + as.numeric(followers_count)| 0 |reply_time + followers_count ,data = rdd_neg_neg)
+mod<- felm(mean ~ D + running_variable |as.numeric(reply_time) + as.numeric(followers_count)| 0 |reply_time + followers_count ,data = rdd_neg_neg)
 
-summary(mod3)
+summary(mod)
 ```
-Replies but not to affect labelling tweets
+
+## Replies but not to affect labelling tweets
 
 ```{r}
+#compare negative and positive replies
+mod<- felm(mean ~ D + running_variable + valence * D + valence*running_variable|as.numeric(reply_time) + as.numeric(followers_count)| 0 |reply_time + followers_count ,data = rdd_neg_reply)
 
-mod3<- felm(mean ~ D + running_variable + valence * D + valence*running_variable|as.numeric(reply_time) + as.numeric(followers_count)| 0 |reply_time + followers_count ,data = rdd_neg_reply)
-
-summary(mod3)
+summary(mod)
 
 ```
 
-
+### Negative replies
 ```{r}
 rdd_neg_reply_neg <- rdd_neg_reply[rdd_neg_reply["valence"] == "neg0",]
-mod3<- felm(mean ~ D + running_variable|as.numeric(reply_time) + as.numeric(followers_count)| 0 |reply_time + followers_count ,data = rdd_neg_reply_neg)
+mod<- felm(mean ~ D + running_variable|as.numeric(reply_time) + as.numeric(followers_count)| 0 |reply_time + followers_count ,data = rdd_neg_reply_neg)
 
-summary(mod3)
+summary(mod)
 ```
+
+#### Placebo test
 ```{r}
 
 
@@ -133,15 +140,16 @@ output = c("data", "ggplot")
 )
 ```
 
-
+### Positive replies
 ```{r}
 
 rdd_neg_reply_pos <- rdd_neg_reply[rdd_neg_reply["valence"] == "pos0",]
-mod3<- felm(mean ~ D + running_variable |as.numeric(reply_time) + as.numeric(followers_count)| 0 |reply_time + followers_count ,data = rdd_neg_reply_pos)
+mod<- felm(mean ~ D + running_variable |as.numeric(reply_time) + as.numeric(followers_count)| 0 |reply_time + followers_count ,data = rdd_neg_reply_pos)
 
-summary(mod3)
+summary(mod)
 ```
 
+#### Placebo test
 ```{r}
 data <- rdd_data(y= rdd_neg_reply_pos$mean,x= rdd_neg_reply_pos$running_variable, cutpoint = 0 )
 
@@ -160,14 +168,16 @@ output = c("data", "ggplot")
 )
 ```
 
-
+## Without replies
 ```{r}
-mod3<- felm(mean ~ D + running_variable |as.numeric(followers_count)| 0 | followers_count ,data = rdd_neg_unreply)
+mod<- felm(mean ~ D + running_variable |as.numeric(followers_count)| 0 | followers_count ,data = rdd_neg_unreply)
 
-summary(mod3)
+summary(mod)
 
 
 ```
+
+### Placebo test
 ```{r}
 data <- rdd_data(y= rdd_neg_unreply$mean,x= rdd_neg_unreply$running_variable, cutpoint = 0 )
 
@@ -185,7 +195,8 @@ plot = TRUE,
 output = c("data", "ggplot")
 )
 ```
-Data distribution
+
+## Data distribution for replies to affect labelling tweets
 
 ```{r}
 
@@ -211,7 +222,7 @@ frequency_mood  %>%
 ```
 
 
-Data distribution 
+## Data distribution for replies not to affect labelling
 ```{r}
 frequency_mood <- rdd_neg_reply %>%
   group_by(id) %>%

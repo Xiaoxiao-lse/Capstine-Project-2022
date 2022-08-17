@@ -1,5 +1,5 @@
 ---
-title: "RDD"
+title: "RDD_Positive affect labeling"
 output: html_document
 ---
 
@@ -16,7 +16,7 @@ library("xlsx")
 library("lfe")
 ```
 
-posative affect labeling
+
 ```{r}
 #load files
 rdd_pos <- read.csv("new/rdd_pos.csv") #replies are to affect labelling tweets
@@ -46,7 +46,7 @@ rdd_pos_unreply$valence <- "None"
 rdd_pos_overall <- rbind(rdd_pos,rdd_pos_reply,rdd_pos_unreply)
 ```
 
-
+# Overall Analysis
 ```{r}
 rdd_pos_overall$valence <- relevel(rdd_pos_overall$valence ,ref = "None")
 mod <- felm(mean ~ D + running_variable + valence*D +valence*running_variable| as.numeric(reply_time) + as.numeric(followers_count)| 0 |reply_time + followers_count,data = rdd_pos_overall)
@@ -54,56 +54,66 @@ summary(mod)
 
 ```
 
-With affect labelling replies
+## With affect labelling replies
 
 ```{r}
 mod <- felm(mean ~ D + running_variable + valence*D +valence*running_variable| as.numeric(reply_time) + as.numeric(followers_count)| 0 |reply_time + followers_count,data = rdd_pos)
 
 summary(mod)
 ```
-pos affect labelling replies
+
+### Positive replies towards affect labelling tweets
 ```{r}
 rdd_pos_pos <- rdd_pos[rdd_pos["valence"] == "pos",]
 
-mod2 <- felm(mean ~ D + running_variable |as.numeric(reply_time) + as.numeric(followers_count)| 0 |reply_time + followers_count ,data = rdd_pos_pos)
+mod <- felm(mean ~ D + running_variable |as.numeric(reply_time) + as.numeric(followers_count)| 0 |reply_time + followers_count ,data = rdd_pos_pos)
 
-summary(mod2)
+summary(mod)
 ```
 
+### Negative replies towards affect labelling tweets
 ```{r}
 rdd_pos_neg <- rdd_pos[rdd_pos["valence"] == "neg",]
 
-mod2 <- felm(mean ~ D + running_variable |as.numeric(reply_time) + as.numeric(followers_count)| 0 |reply_time + followers_count ,data = rdd_pos_neg)
+mod <- felm(mean ~ D + running_variable |as.numeric(reply_time) + as.numeric(followers_count)| 0 |reply_time + followers_count ,data = rdd_pos_neg)
 
-summary(mod2)
+summary(mod)
 ```
-Replies but not to affect labelling 
+
+## Replies but not to affect labelling tweets
 ```{r}
-mod3<- felm(mean ~ D + running_variable + valence * D + valence*running_variable|as.numeric(reply_time) + as.numeric(followers_count)| 0 |reply_time + followers_count ,data = rdd_pos_reply)
+mod<- felm(mean ~ D + running_variable + valence * D + valence*running_variable|as.numeric(reply_time) + as.numeric(followers_count)| 0 |reply_time + followers_count ,data = rdd_pos_reply)
 
-summary(mod3)
+summary(mod)
 ```
 
+
+### Negative replies
 ```{r}
 rdd_pos_reply_neg <- rdd_pos_reply[rdd_pos_reply["valence"] == "neg0",]
-mod3<- felm(mean ~ D + running_variable|as.numeric(reply_time) + as.numeric(followers_count)| 0 |reply_time + followers_count ,data = rdd_pos_reply_neg)
+mod<- felm(mean ~ D + running_variable|as.numeric(reply_time) + as.numeric(followers_count)| 0 |reply_time + followers_count ,data = rdd_pos_reply_neg)
 
-summary(mod3)
+summary(mod)
 ```
 
+
+### Positive replies
 ```{r}
 rdd_pos_reply_pos <- rdd_pos_reply[rdd_pos_reply["valence"] == "pos0",]
-mod3<- felm(mean ~ D + running_variable|as.numeric(reply_time) + as.numeric(followers_count)| 0 |reply_time + followers_count ,data = rdd_pos_reply_pos)
+mod<- felm(mean ~ D + running_variable|as.numeric(reply_time) + as.numeric(followers_count)| 0 |reply_time + followers_count ,data = rdd_pos_reply_pos)
 
-summary(mod3)
+summary(mod)
 ```
 
+## Without replies
 ```{r}
-mod3<- felm(mean ~ D + running_variable |as.numeric(followers_count)| 0 | followers_count ,data = rdd_pos_unreply)
+mod<- felm(mean ~ D + running_variable |as.numeric(followers_count)| 0 | followers_count ,data = rdd_pos_unreply)
 
-summary(mod3)
+summary(mod)
 ```
-Data distributionßß
+
+
+## Data distribution for replies to affect labelling tweets
 ```{r}
 frequency_mood <- rdd_pos %>%
   group_by(id) %>%
@@ -124,7 +134,7 @@ frequency_mood  %>%
   group_by(valence) %>%
   summarise_at(vars(reply_time), list(name = mean))
 ```
-Data distribution
+## Data distribution for replies not  affect labelling tweets
 ```{r}
 frequency_mood <- rdd_pos_reply %>%
   group_by(id) %>%
