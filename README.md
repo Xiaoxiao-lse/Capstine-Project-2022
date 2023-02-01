@@ -1,4 +1,4 @@
-# Capstine-Project-2022
+# Capstone-Project-2022
 ## Venting or sharing? Evaluate effects of affect labelling in the context of social sharing of emotions (SSE) on Twitter
 The code for the capstone project. Only intermediary data is included.
 
